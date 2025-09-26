@@ -1,5 +1,5 @@
-#ifndef AWOKFLOW_H
-#define AWOKFLOW_H
+#ifndef RUFLOW_H
+#define RUFLOW_H
 
 typedef struct {
 
@@ -15,14 +15,14 @@ typedef struct {
 } valyu;
 
 enum {
-    LA, IN, OUT, NEW
+    LA, IN, OUT, NEW, HELP, F
 };
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <locale.h>
 #include <time.h>
+#include <getopt.h>
 
 void help();
 void getCurrentTime(int type, char *buff);
@@ -30,5 +30,5 @@ int checkExistingFile(char *filename);
 int getValue(char *filename, valyu *new0);
 int getSavings(char *filename, valyu *new2);
 
-#endif // AWOKFLOW_H
+#endif // RUFLOW_H
 

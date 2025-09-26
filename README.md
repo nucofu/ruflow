@@ -1,6 +1,10 @@
 this app is under development
 
+*changelog
+- changing option logic from manual to getopt.h
+- adding flag for handling conflict
+- new option -f
+
 *known bugs
-- i still haven't writing man yet
-- location file order is must first in arg, otherwise it will segmentation fault
-- i also haven't handling option arg conflict yet
+- help option isn't written yet
+- also this code is not debugged yet
