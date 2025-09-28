@@ -6,16 +6,16 @@ typedef struct {
     int amount;
     int savings;
 
-    char date[11];
     char clock[9];
-    char *name;
     char activity[9];
-    char *desc;
+    char desc[128];
+    char date[11];
+    char name[32];
     
 } valyu;
 
 enum {
-    LA, IN, OUT, NEW, HELP, F
+    LA, IN, OUT, NEW, HELP, F, VER
 };
 
 #include <stdio.h>
@@ -24,11 +24,11 @@ enum {
 #include <time.h>
 #include <getopt.h>
 
-void help();
+void help(int ver);
 void getCurrentTime(int type, char *buff);
 int checkExistingFile(char *filename);
-int getValue(char *filename, valyu *new0);
-int getSavings(char *filename, valyu *new2);
+int getValue(char *filename, valyu *new0, int *flag);
+int getSavings(char *filename);
 
 #endif // RUFLOW_H
 

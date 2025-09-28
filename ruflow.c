@@ -1,5 +1,38 @@
 #include "ruflow.h"
 
+// about
+
+void help(int ver) {
+
+    char desc[] = "ruflow/rupiah flow - simple cashflow manager for managing your own personal cashflow record\n";
+    
+    char usage[] = "  ruflow [options]\n";
+    char options[] = "  -h                             show help message\n  -v                             show versions\n  -f <file>                      creating or accessing file\n    -l                             show last activity\n    -n <saving> <name>             write new record\n    -i <amount> <description>      write incoming cash\n    -o <amount> <description>      write outgoing cash\n";
+    char examples[] = "  ruflow -f cashflow.log -n 200000 Ucok\n  ruflow -f cashflow.log -i 5000 fromUdin\n  ruflow -f cashflow.log -o 2000 fromIcih\n";
+    char versions[] = "ruflow/rupiah flow - version protoype 2\n";
+
+    if (ver == 1) {
+        printf("%s", versions);
+        exit(EXIT_SUCCESS);
+    }
+    
+    printf("%s\nUsage:\n%s\nOptions:\n%s\nExamples:\n%s\n", desc, usage, options, examples);    
+}
+
+// check Something
+
+int checkExistingFile(char *filename) {
+    FILE *file;
+    file = fopen(filename, "r");
+    if (file != NULL) {
+        fclose(file);
+        return -1;
+    }
+    return 0;
+}
+
+// get some data
+
 void getCurrentTime(int value, char *buff) {
     time_t curtime;
     struct tm *timeinfo;
@@ -14,64 +47,100 @@ void getCurrentTime(int value, char *buff) {
     }
 }
 
-int checkExistingFile(char *filename) {
-    FILE *file;
-    file = fopen(filename, "r");
-    if (file != NULL) {
-        fclose(file);
-        return -1;
-    }
-    return 0;
-}
-
-int getValue(char *filename, valyu *new0) {
+int getValue(char *filename, valyu *new0, int *flag) {
+    FILE *logfile;
+    char buff[512];
+    
     if (checkExistingFile(filename) == 0) {
         return -1;
-    } else {
-        char buff[512];
-        FILE *logfile;
-        logfile = fopen(filename, "r");
-        while (fgets(buff, sizeof(buff), logfile) != NULL) {
-            if (sscanf(buff, "%10s, %s, Savings: %d\n", new0->date, new0->name, &new0->savings) != 3) {
-                sscanf(buff, "[%8s] %8s cash, amount: Rp%d, description: %s, savings: Rp%d\n", new0->clock, new0->activity, &new0->amount, new0->desc, &new0->savings);
-            }
-        }
-
-        fclose(logfile);
-        return 0;
     }
 
+    logfile = fopen(filename, "r");
+    if (!logfile) {
+        perror("fopen");
+        return -1;
+    }
+    
+    valyu temp;
+
+    while (fgets(buff, sizeof(buff), logfile) != NULL) {
+        if (sscanf(buff, "%10[^,], %31[^,], savings: Rp%d\n", temp.date, temp.name, &temp.savings) == 3)
+            
+            {
+                *new0 = temp;
+                *flag = 1;
+                continue;
+            }
+ 
+        if (sscanf(buff, "%8[^,], %8s cash, amount: Rp%d, description: %127[^,], savings: Rp%d\n", temp.clock, temp.activity, &temp.amount, temp.desc, &temp.savings) == 5)
+
+            {
+                *new0 = temp;
+                *flag = 2;
+                continue;
+            }
+
+    }
+    
+    fclose(logfile);
+    return 0;
+    
 }
 
-int getSavings(char *filename, valyu *new2) {
-    getValue(filename, new2);
-    return new2->savings;
+int getSavings(char *filename) {
+    valyu temp;
+    int flag;
+    if (getValue(filename, &temp, &flag) == 0) {
+        return temp.savings;
+    }
+
+    return -1;
 }
 
 int main(int argc, char *argv[]) {
 
-    // multi optional variable
+    int mainFlag[3];
+    mainFlag[0] = 0; // error flag if ruflow have no argument
+    mainFlag[1] = 0; // error flag if argument not found
+    mainFlag[2] = 0; // warning flag if only inserting -f option
+    
+    if (argc == 1) {
+        mainFlag[0] = 1;
+    }
+
+    // global options variable
     FILE *logfile;
     valyu data[4];
     char *filename;
     int gSavings;
-
-    // single optional variable
-    int nSaving;
     
-    // optional flag
-    int flag[6];
-    flag[HELP] = 0;
-    flag[LA] = 0;
-    flag[NEW] = 0;
-    flag[IN] = 0;
-    flag[OUT] = 0;
-    flag[F] = 0;
+    // options flag
+    int flag[7];
+    flag[HELP] = 0; // -h
+    flag[LA] = 0;   // -l
+    flag[NEW] = 0;  // -n
+    flag[IN] = 0;   // -i
+    flag[OUT] = 0;  // -o
+    flag[F] = 0;    // -f
+    flag[VER] = 0;  // -v
 
+    // get option argument and send a flag
     int opt;
-    while ((opt = getopt(argc, argv, "f:hln:i:o:")) != -1) {
+    while ((opt = getopt(argc, argv, "hvf:ln:i:o:")) != -1) {
         switch(opt) {
 
+        case 'h': {
+            flag[HELP] = 1;
+            mainFlag[1] = 1;
+            break;
+        }
+
+        case 'v': {
+            flag[VER] = 1;
+            mainFlag[1] = 1;
+            break;
+        }
+            
         case 'f': {
             if (optarg != NULL) {
                 filename = strdup(optarg);
@@ -81,75 +150,93 @@ int main(int argc, char *argv[]) {
             }
             
             flag[F] = 1;
+            mainFlag[1] = 1;
+
+            if (argv[optind] == NULL) {
+                mainFlag[2] = 1;
+            }
+            
             break;
         }
-            
-        case 'h': {
-            flag[HELP] = 1;
-            break;
-        }
-            
+                        
         case 'l': {
             flag[LA] = 1;
+            mainFlag[1] = 1;
             break;
         }
             
         case 'n': {
             if (optarg != NULL) {
-                data[NEW].name = strdup(optarg);
+                data[NEW].savings = atoi(optarg);
+                if (!data[NEW].savings) {
+                    fprintf(stderr, "<saving> must integer\n");
+                    exit(EXIT_FAILURE);
+                }
             } else {
                 fprintf(stderr, "invalid argument\n");
                 exit(EXIT_FAILURE);
             }
             
             if (optind < argc) {
-                nSaving = atoi(argv[optind]);
+                snprintf(data[NEW].name, sizeof(data[NEW].name), "%s", argv[optind]);
                 optind++;
             } else {
-                fprintf(stderr, "option -n need two argument: <name> <saving>\n");
+                fprintf(stderr, "option -n need two argument: <saving> <name>\n");
                 exit(EXIT_FAILURE);
             }
 
             flag[NEW] = 1;
+            mainFlag[1] = 1;
             break;
         }
+            
         case 'i': {
             if (optarg != NULL) {
                 data[IN].amount = atoi(optarg);
+                if (!data[IN].amount) {
+                    fprintf(stderr, "<amount> must integer\n");
+                    exit(EXIT_FAILURE);
+                }
             } else {
                 fprintf(stderr, "invalid argument\n");
                 exit(EXIT_FAILURE);
             }
 
             if (optind < argc) {
-                data[IN].desc = strdup(argv[optind]);
+                snprintf(data[IN].desc, sizeof(data[IN].desc), "%s", argv[optind]);
                 optind++;
             } else {
-                fprintf(stderr, "option -i need two argument: <amount <description>\n");
+                fprintf(stderr, "option -i need two argument: <amount> <description>\n");
                 exit(EXIT_FAILURE);
             }
             
-            flag[IN] = 1;                
+            flag[IN] = 1;
+            mainFlag[1] = 1;
             break;
         }
             
         case 'o': {
             if (optarg != NULL) {
                 data[OUT].amount = atoi(optarg);
+                if (!data[OUT].amount) {
+                    fprintf(stderr, "<amount> must integer\n");
+                    exit(EXIT_FAILURE);
+                }
             } else {
                 fprintf(stderr, "invalid argument\n");
                 exit(EXIT_FAILURE);
             }
 
             if (optind < argc) {
-                data[OUT].desc = strdup(argv[optind]);
+                snprintf(data[OUT].desc, sizeof(data[OUT].desc), "%s", argv[optind]);
                 optind++;
             } else {
-                fprintf(stderr, "option -o need two argument: <amount <description>\n");
+                fprintf(stderr, "option -o need two argument: <amount> <description>\n");
                 exit(EXIT_FAILURE);
             }
 
-            flag[OUT] = 1;                
+            flag[OUT] = 1;
+            mainFlag[1] = 1;
             break;
         }
 
@@ -166,14 +253,35 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // option conflict
-    if (flag[F] == 0 && (flag[LA] == 1 | flag[IN] == 1 | flag[OUT] == 1 | flag[NEW] == 1)) {
-        fprintf(stderr, "option -f is required for this option (-l | -n | -i | -o)\n");
+  // top priority options
+    if (flag[HELP] == 1) {
+        help(0);
+        
+        // puts("help");
+        return 0;
+    }
+
+    if (flag[VER] == 1) {
+        help(1);
+        
+        // puts("version");
+        return 0;
+    }    
+    
+
+  // handling options conflict
+    if (mainFlag[0] == 1) {
+        fprintf(stderr, "input an option/argument, see -h for help -h\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (mainFlag[1] != 1) {
+        fprintf(stderr, "argument not found, see -h for help -h\n");
         exit(EXIT_FAILURE);
     }
     
-    if (flag[HELP] == 1 && (flag[LA] == 1 | flag[NEW] == 1 | flag[IN] == 1 | flag[OUT] == 1 | flag[F] == 1)) {
-        fprintf(stderr, "option -h must standalone\n");
+    if (flag[F] == 0 && (flag[LA] == 1 | flag[IN] == 1 | flag[OUT] == 1 | flag[NEW] == 1)) {
+        fprintf(stderr, "option -f is required for this option ( -l | -n | -i | - o)\n");
         exit(EXIT_FAILURE);
     }
 
@@ -182,35 +290,44 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    if (flag[IN] == 1 && flag[OUT] == 1) {
-        fprintf(stderr, "choose one between -i or -o\n");
+    if ((flag[NEW] == 1 && (flag[IN] == 1  ||  flag[OUT] == 1)) ||
+         (flag[IN] == 1 && (flag[NEW] == 1  ||  flag[OUT] == 1)) ||
+        (flag[OUT] == 1 && (flag[IN] == 1  || flag[NEW] == 1))) {
+        fprintf(stderr, "choose one! between -n, -i or -o\n");
         exit(EXIT_FAILURE);
     }
 
-    // option logic           
+  // options logic           
     if (flag[F] == 1) {
         if (!filename) {
-            fprintf(stderr, "invalid filename\n");
+            fprintf(stderr, "filename is NULL\n");
+            exit(EXIT_FAILURE);
+        } else if (filename[0] == '-') {
+            fprintf(stderr, "don't use dash '-' for the first character\n");
             exit(EXIT_FAILURE);
         }
 
         if (checkExistingFile(filename) != 0) {
-            gSavings = getSavings(filename, &data[LA]);
+            gSavings = getSavings(filename);
+        }
+
+        if (mainFlag[2] == 1) {
+            printf("add this option ( -l | -n | -i | -o ) to operate\n");
         }
         
         // puts("filename");
     }
 
-    if (flag[HELP] == 1) {
-        puts("help");
-        return 0;
-    }
-    
     if (flag[LA] == 1) {
-        if (getValue(filename, &data[LA]) != 1) {
-            printf("[%8s] %8s cash\n amount: Rp%d\ndescription: %s\nsavings: %d\n", data[LA].clock, data[LA].activity, data[LA].amount, data[LA].desc, data[LA].savings);
+        int flag;
+        if (getValue(filename, &data[LA], &flag) != -1) {
+            if (flag == 1) {
+                printf("date: %s,\nname: %s,\nsavings: %d\n", data[LA].date, data[LA].name, data[LA].savings);
+            } else if (flag == 2) {
+                printf("clock: %s,\nactivity: %s cash,\namount: Rp%d\ndescription: %s\nsavings: Rp%d\n", data[LA].clock, data[LA].activity, data[LA].amount, data[LA].desc, data[LA].savings);
+            }
         } else {
-            fprintf(stderr, "invalid argument\n");
+            fprintf(stderr, "file not found, see -h for help\n");
             exit(EXIT_FAILURE);
         }
 
@@ -220,14 +337,24 @@ int main(int argc, char *argv[]) {
 
     if (flag[NEW] == 1) {
         getCurrentTime(1, data[NEW].date);
-        
-        logfile = fopen(filename, "w");
-        if (!logfile) {
-            perror("fopen");
-            exit(EXIT_FAILURE);
+
+        if (checkExistingFile(filename) == -1) {
+            logfile = fopen(filename, "a");
+            if (!logfile) {
+                perror("fopen");
+                exit(EXIT_FAILURE);
+            }
+            fprintf(logfile, "\n");
+
+        } else if (checkExistingFile(filename) == 0) {        
+            logfile = fopen(filename, "w");
+            if (!logfile) {
+                perror("fopen");
+                exit(EXIT_FAILURE);
+            }
         }
-            
-        fprintf(logfile, "%10s, %s, Savings: %d\n", data[NEW].date, data[NEW].name, nSaving);
+        
+        fprintf(logfile, "%10s, %s, savings: Rp%d\n", data[NEW].date, data[NEW].name, data[NEW].savings);
         fclose(logfile);
 
         // puts("newfile");
@@ -244,7 +371,7 @@ int main(int argc, char *argv[]) {
         }
             
         gSavings += data[IN].amount;
-        fprintf(logfile, "[%8s] incoming cash, amount: Rp%d, description: %s, savings: Rp%d\n", data[IN].clock, data[IN].amount, data[IN].desc, gSavings);
+        fprintf(logfile, "%8s, incoming cash, amount: Rp%d, description: %s, savings: Rp%d\n", data[IN].clock, data[IN].amount, data[IN].desc, gSavings);
         fclose(logfile);
 
         // puts("incoming cash");
@@ -267,7 +394,7 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
             
-        fprintf(logfile, "[%8s] outgoing cash, amount: Rp%d, description: %s, savings: Rp%d\n", data[OUT].clock, data[OUT].amount, data[OUT].desc, gSavings);
+        fprintf(logfile, "%8s, outgoing cash, amount: Rp%d, description: %s, savings: Rp%d\n", data[OUT].clock, data[OUT].amount, data[OUT].desc, gSavings);
         fclose(logfile);
 
         // puts("outgoing cash");
