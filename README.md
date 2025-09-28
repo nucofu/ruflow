@@ -10,11 +10,11 @@ Usage:
 Options:
   -h                             show help message
   -v                             show versions
-  -f \<file\>                    creating or accessing file
-    -l                                 show last activity
-    -n \<saving\> \<name\>             write new record
-    -i \<amount\> \<description\>      write incoming cash
-    -o \<amount\> \<description\>      write outgoing cash
+  -f <file>                      creating or accessing file
+    -l                             show last activity
+    -n <saving> <name>             write new record
+    -i <amount> <description>      write incoming cash
+    -o <amount> <description>      write outgoing cash
     
 Examples:
   ruflow -f cashflow.log -n 200000 Ucok
