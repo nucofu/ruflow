@@ -3,8 +3,9 @@ this app is under development
 **\*help**
 ```--help
 ruflow/rupiah flow - simple cashflow manager for managing your own personal cashflow record
+
 Usage:
-ruflow [options]
+  ruflow [options]
 
 Options:
   -h                             show help message
