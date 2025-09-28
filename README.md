@@ -1,25 +1,25 @@
 this app is under development
 
 **\*help**
+```--help
 ruflow/rupiah flow - simple cashflow manager for managing your own personal cashflow record
-
 Usage:
-  ruflow [options]
+ruflow [options]
 
 Options:
   -h                             show help message
   -v                             show versions
-  -f \<file\>                      creating or accessing file
-    -l                             show last activity
+  -f \<file\>                    creating or accessing file
+    -l                                 show last activity
     -n \<saving\> \<name\>             write new record
     -i \<amount\> \<description\>      write incoming cash
     -o \<amount\> \<description\>      write outgoing cash
-
+    
 Examples:
   ruflow -f cashflow.log -n 200000 Ucok
   ruflow -f cashflow.log -i 5000 fromUdin
   ruflow -f cashflow.log -o 2000 fromIcih
-
+```
 
 **\*changelog**
 - adding help message
