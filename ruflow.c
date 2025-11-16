@@ -7,9 +7,9 @@ void help(int ver) {
     char desc[] = "ruflow/rupiah flow - simple cashflow manager for managing your own personal cashflow record\n";
     
     char usage[] = "  ruflow [options]\n";
-    char options[] = "  -h                             show help message\n  -v                             show versions\n  -f <file>                      creating or accessing file\n    -l                             show last activity\n    -n <saving> <name>             write new record\n    -i <amount> <description>      write incoming cash\n    -o <amount> <description>      write outgoing cash\n";
-    char examples[] = "  ruflow -f cashflow.log -n 200000 Ucok\n  ruflow -f cashflow.log -i 5000 fromUdin\n  ruflow -f cashflow.log -o 2000 fromIcih\n";
-    char versions[] = "ruflow/rupiah flow - version protoype 2\n";
+    char options[] = "  -h                             show help message\n  -v                             show versions\n  -f <file>                      creating or accessing file\n    -l                             show last activity\n    -n <saving> <write>            title new record\n    -i <amount> <description>      write incoming cash\n    -o <amount> <description>      write outgoing cash\n";
+    char examples[] = "  ruflow -f cashflow.log -n 200000 \"Ucok Cashflow\"\n  ruflow -f cashflow.log -i 5000 \"from udin\"\n  ruflow -f cashflow.log -o 2000 \"from icih\"\n";
+    char versions[] = "ruflow/rupiah flow - version protoype 3.1\n";
 
     if (ver == 1) {
         printf("%s", versions);
@@ -47,7 +47,7 @@ void getCurrentTime(int value, char *buff) {
     }
 }
 
-int getValue(char *filename, valyu *new0, int *flag) {
+int getLastActivityValue(char *filename, valyu *new0, int *flag) {
     FILE *logfile;
     char buff[512];
     
@@ -64,7 +64,7 @@ int getValue(char *filename, valyu *new0, int *flag) {
     valyu temp;
 
     while (fgets(buff, sizeof(buff), logfile) != NULL) {
-        if (sscanf(buff, "%10[^,], %31[^,], savings: Rp%d\n", temp.date, temp.name, &temp.savings) == 3)
+        if (sscanf(buff, "%10[^,], %31[^,], savings: Rp%d\n", temp.date, temp.title, &temp.savings) == 3)
             
             {
                 *new0 = temp;
@@ -72,7 +72,8 @@ int getValue(char *filename, valyu *new0, int *flag) {
                 continue;
             }
  
-        if (sscanf(buff, "%8[^,], %8s cash, amount: Rp%d, description: %127[^,], savings: Rp%d\n", temp.clock, temp.activity, &temp.amount, temp.desc, &temp.savings) == 5)
+        if (sscanf(buff, "%8[^,], %8s cash, amount: Rp%d, description: %127[^,], savings: Rp%d\n",
+                   temp.clock, temp.activity, &temp.amount, temp.desc, &temp.savings) == 5)
 
             {
                 *new0 = temp;
@@ -90,12 +91,14 @@ int getValue(char *filename, valyu *new0, int *flag) {
 int getSavings(char *filename) {
     valyu temp;
     int flag;
-    if (getValue(filename, &temp, &flag) == 0) {
+    if (getLastActivityValue(filename, &temp, &flag) == 0) {
         return temp.savings;
     }
 
     return -1;
 }
+
+// main function
 
 int main(int argc, char *argv[]) {
 
@@ -112,19 +115,21 @@ int main(int argc, char *argv[]) {
     FILE *logfile;
     valyu data[4];
     char *filename;
+
     int gSavings;
+    gSavings = 0;
     
     // options flag
     int flag[7];
-    flag[HELP] = 0; // -h
-    flag[LA] = 0;   // -l
-    flag[NEW] = 0;  // -n
-    flag[IN] = 0;   // -i
-    flag[OUT] = 0;  // -o
-    flag[F] = 0;    // -f
-    flag[VER] = 0;  // -v
+    flag[HELP] = 0; // -h or Help
+    flag[LA] = 0;   // -l or Last Activity
+    flag[NEW] = 0;  // -n or New Record
+    flag[IN] = 0;   // -i or incoming cash
+    flag[OUT] = 0;  // -o or outgoing cash
+    flag[F] = 0;    // -f or filename
+    flag[VER] = 0;  // -v or versions
 
-    // get option argument and send a flag
+    // get an argument and send a flag
     int opt;
     while ((opt = getopt(argc, argv, "hvf:ln:i:o:")) != -1) {
         switch(opt) {
@@ -167,21 +172,31 @@ int main(int argc, char *argv[]) {
             
         case 'n': {
             if (optarg != NULL) {
-                data[NEW].savings = atoi(optarg);
-                if (!data[NEW].savings) {
+                int valid = 1;
+                for (int i = 0; optarg[i] != '\0'; i++) {
+                    if (!isdigit(optarg[i])) {
+                        valid = 0;
+                        break;
+                    }
+                }
+                
+                if (valid == 1) {
+                    data[NEW].savings = atoi(optarg);
+                } else {
                     fprintf(stderr, "<saving> must integer\n");
                     exit(EXIT_FAILURE);
                 }
+                
             } else {
                 fprintf(stderr, "invalid argument\n");
                 exit(EXIT_FAILURE);
             }
             
             if (optind < argc) {
-                snprintf(data[NEW].name, sizeof(data[NEW].name), "%s", argv[optind]);
+                snprintf(data[NEW].title, sizeof(data[NEW].title), "%s", argv[optind]);
                 optind++;
             } else {
-                fprintf(stderr, "option -n need two argument: <saving> <name>\n");
+                fprintf(stderr, "option -n need two argument: <saving> <title>\n");
                 exit(EXIT_FAILURE);
             }
 
@@ -191,12 +206,22 @@ int main(int argc, char *argv[]) {
         }
             
         case 'i': {
-            if (optarg != NULL) {
-                data[IN].amount = atoi(optarg);
-                if (!data[IN].amount) {
+            if (optarg != NULL) {                
+                int valid = 1;
+                for (int i = 0; optarg[i] != '\0'; i++) {
+                    if (!isdigit(optarg[i])) {
+                        valid = 0;
+                        break;
+                    }
+                }
+                
+                if (valid == 1) {
+                    data[IN].amount = atoi(optarg);
+                } else {
                     fprintf(stderr, "<amount> must integer\n");
                     exit(EXIT_FAILURE);
                 }
+                
             } else {
                 fprintf(stderr, "invalid argument\n");
                 exit(EXIT_FAILURE);
@@ -217,8 +242,17 @@ int main(int argc, char *argv[]) {
             
         case 'o': {
             if (optarg != NULL) {
-                data[OUT].amount = atoi(optarg);
-                if (!data[OUT].amount) {
+                int valid = 1;
+                for (int i = 0; optarg[i] != '\0'; i++) {
+                    if (!isdigit(optarg[i])) {
+                        valid = 0;
+                        break;
+                    }
+                }
+                
+                if (valid == 1) {
+                    data[OUT].amount = atoi(optarg);
+                } else {
                     fprintf(stderr, "<amount> must integer\n");
                     exit(EXIT_FAILURE);
                 }
@@ -271,17 +305,17 @@ int main(int argc, char *argv[]) {
 
   // handling options conflict
     if (mainFlag[0] == 1) {
-        fprintf(stderr, "input an option/argument, see -h for help -h\n");
+        fprintf(stderr, "input an option or argument, see -h for help\n");
         exit(EXIT_FAILURE);
     }
 
     if (mainFlag[1] != 1) {
-        fprintf(stderr, "argument not found, see -h for help -h\n");
+        fprintf(stderr, "argument not found, see -h for help\n");
         exit(EXIT_FAILURE);
     }
     
     if (flag[F] == 0 && (flag[LA] == 1 | flag[IN] == 1 | flag[OUT] == 1 | flag[NEW] == 1)) {
-        fprintf(stderr, "option -f is required for this option ( -l | -n | -i | - o)\n");
+        fprintf(stderr, "option -f is required for this option ( -l, -n, -i, -o)\n");
         exit(EXIT_FAILURE);
     }
 
@@ -291,9 +325,9 @@ int main(int argc, char *argv[]) {
     }
 
     if ((flag[NEW] == 1 && (flag[IN] == 1  ||  flag[OUT] == 1)) ||
-         (flag[IN] == 1 && (flag[NEW] == 1  ||  flag[OUT] == 1)) ||
+        (flag[IN] == 1 && (flag[NEW] == 1  ||  flag[OUT] == 1)) ||
         (flag[OUT] == 1 && (flag[IN] == 1  || flag[NEW] == 1))) {
-        fprintf(stderr, "choose one! between -n, -i or -o\n");
+        fprintf(stderr, "choose one! ( -n, -i, -o )\n");
         exit(EXIT_FAILURE);
     }
 
@@ -303,7 +337,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "filename is NULL\n");
             exit(EXIT_FAILURE);
         } else if (filename[0] == '-') {
-            fprintf(stderr, "don't use dash '-' for the first character\n");
+            fprintf(stderr, "don't use dash '-' as the first character\n");
             exit(EXIT_FAILURE);
         }
 
@@ -312,7 +346,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (mainFlag[2] == 1) {
-            printf("add this option ( -l | -n | -i | -o ) to operate\n");
+            printf("add this option ( -l, -n, -i, -o ) to operate\n");
         }
         
         // puts("filename");
@@ -320,11 +354,12 @@ int main(int argc, char *argv[]) {
 
     if (flag[LA] == 1) {
         int flag;
-        if (getValue(filename, &data[LA], &flag) != -1) {
+        if (getLastActivityValue(filename, &data[LA], &flag) != -1) {
             if (flag == 1) {
-                printf("date: %s,\nname: %s,\nsavings: %d\n", data[LA].date, data[LA].name, data[LA].savings);
+                printf("date: %s,\ntitle: %s,\namount: %d\n", data[LA].date, data[LA].title, data[LA].amount);
             } else if (flag == 2) {
-                printf("clock: %s,\nactivity: %s cash,\namount: Rp%d\ndescription: %s\nsavings: Rp%d\n", data[LA].clock, data[LA].activity, data[LA].amount, data[LA].desc, data[LA].savings);
+                printf("clock: %s,\nactivity: %s cash,\namount: Rp%d\ndescription: %s\namount: Rp%d\n",
+                       data[LA].clock, data[LA].activity, data[LA].amount, data[LA].desc, data[LA].savings);
             }
         } else {
             fprintf(stderr, "file not found, see -h for help\n");
@@ -353,11 +388,11 @@ int main(int argc, char *argv[]) {
                 exit(EXIT_FAILURE);
             }
         }
-        
-        fprintf(logfile, "%10s, %s, savings: Rp%d\n", data[NEW].date, data[NEW].name, data[NEW].savings);
+        gSavings += data[NEW].savings;
+        fprintf(logfile, "%10s, %s, savings: Rp%d\n", data[NEW].date, data[NEW].title, gSavings);
         fclose(logfile);
 
-        // puts("newfile");
+        // puts("new record");
 
     }
 
@@ -371,7 +406,8 @@ int main(int argc, char *argv[]) {
         }
             
         gSavings += data[IN].amount;
-        fprintf(logfile, "%8s, incoming cash, amount: Rp%d, description: %s, savings: Rp%d\n", data[IN].clock, data[IN].amount, data[IN].desc, gSavings);
+        fprintf(logfile, "%8s, incoming cash, amount: Rp%d, description: %s, savings: Rp%d\n",
+                data[IN].clock, data[IN].amount, data[IN].desc, gSavings);
         fclose(logfile);
 
         // puts("incoming cash");
@@ -394,7 +430,8 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
             
-        fprintf(logfile, "%8s, outgoing cash, amount: Rp%d, description: %s, savings: Rp%d\n", data[OUT].clock, data[OUT].amount, data[OUT].desc, gSavings);
+        fprintf(logfile, "%8s, outgoing cash, amount: Rp%d, description: %s, savings: Rp%d\n",
+                data[OUT].clock, data[OUT].amount, data[OUT].desc, gSavings);
         fclose(logfile);
 
         // puts("outgoing cash");

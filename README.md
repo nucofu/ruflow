@@ -17,15 +17,16 @@ Options:
     -o <amount> <description>      write outgoing cash
     
 Examples:
-  ruflow -f cashflow.log -n 200000 Ucok
-  ruflow -f cashflow.log -i 5000 fromUdin
-  ruflow -f cashflow.log -o 2000 fromIcih
+  ruflow -f cashflow.log -n 200000 "Ucok Cashflow"
+  ruflow -f cashflow.log -i 5000 "from udin"
+  ruflow -f cashflow.log -o 2000 "from icih"
 ```
 
 **\*changelog**
-- adding help message
-- new option -v
-- getValue() function is fixed
+- changing getValue() to getLastActivityValue()
+- changing "name" variable to "title" variable
+- automatically sum savings when using -n option with previous cashflow activity
+- update savings/amount validation
 - other minor changes
 
 
@@ -35,7 +36,7 @@ Examples:
 
 **\*notes**
 - when you write new record, write again your name and your last savings manually
-- when you write \<name\> or \<description\> don't use whitespace
+- when you write \<name\> or \<description\> don't use whitespace otherwise write inside a quote
 - \<name\> length is 31 and \<description\> length is 127
 
 
