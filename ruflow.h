@@ -15,7 +15,7 @@ typedef struct {
 } valyu;
 
 enum {
-    LA, IN, OUT, NEW, HELP, F, VER
+    LA, IN, OUT, NEW, F, HELP, VER
 };
 
 #include <stdio.h>
@@ -30,6 +30,7 @@ void getCurrentTime(int type, char *buff);
 int checkExistingFile(char *filename);
 int getLastActivityValue(char *filename, valyu *new0, int *flag);
 int getSavings(char *filename);
+int getHeader(char *filename, char date[], char title[]);
 
 #endif // RUFLOW_H
 

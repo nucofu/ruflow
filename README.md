@@ -1,8 +1,8 @@
 this app is under development
 
 **\*help**
-```--help
-ruflow/rupiah flow - simple cashflow manager for managing your own personal cashflow record
+```
+ruflow/rupiah flow - simple cashflow manager for tracking your own personal record
 
 Usage:
   ruflow [options]
@@ -12,7 +12,7 @@ Options:
   -v                             show versions
   -f <file>                      creating or accessing file
     -l                             show last activity
-    -n <saving> <name>             write new record
+    -n <saving> <title>            write new record
     -i <amount> <description>      write incoming cash
     -o <amount> <description>      write outgoing cash
     
@@ -23,21 +23,24 @@ Examples:
 ```
 
 **\*changelog**
-- changing getValue() to getLastActivityValue()
-- changing "name" variable to "title" variable
-- automatically sum savings when using -n option with previous cashflow activity
-- update savings/amount validation
-- other minor changes
 
+(prototype 3.1)
+- Renamed variable ‘name’ to ‘title’ for consistency.
+- Renamed function getValue() to getLastActivityValue() for consistency.
+- Improved validation for savings/amount input. 
+- Added auto-sum savings feature for -n on previous activity logs.
+- Fixed other minor bugs.
 
-**\*tips**
-- write new record once a day, to change the date
-
+(prototype 3.2)
+- Added fallback logic for -n when no argument is provided but last activity record exists.
+- Added automatic -n execution when the date changes.
+- Added argument with spaces warning for title and description fields.
+- Fixed other minor bugs.
 
 **\*notes**
-- when you write new record, write again your name and your last savings manually
-- when you write \<name\> or \<description\> don't use whitespace otherwise write inside a quote
-- \<name\> length is 31 and \<description\> length is 127
+- now -n option can be run without arguments if it previously still kept the last activity record
+- when you write \<title\> or \<description\> don't use whitespace otherwise write inside a quote
+- \<title\> length is 31 and \<description\> length is 127
 
 
 **\*known bugs**
